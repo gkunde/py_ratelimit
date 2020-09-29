@@ -26,6 +26,9 @@ class RateLimit:
 
         self.__counter = []
 
+        # When checking for cooldown, prevent infinite loop with a max number of iterations.
+        self._max_checks = 100
+
         self.max_triggers = int(max_triggers)
         self.max_period = int(max_period)
 
@@ -43,41 +46,44 @@ class RateLimit:
 
         self.__logger.debug("trigger()")
 
+        # prevent infinite loops on when checking for cooldown.
         itr = 0
 
-        self.__remove()
+        self.__remove_expired_triggers()
 
-        while itr < self.max_period and not self.__check():
+        while self.__check_cooldown() and itr < self._max_checks:
+            # Too many triggers are counted, start cooldown period.
 
-            self.__wait()
+            self.__cooldown()
 
-            self.__remove()
+            self.__remove_expired_triggers()
 
             itr += 1
 
-        if not self.__check():
+        if self.__check_cooldown():
+            # Still require cooldown, must have exceeded self._max_checks interations in while loop.
             raise RuntimeError("RateLimit timeout, unable to clear expired counts.")
 
-        self.__add()
+        self.__add_trigger()
 
         return None
 
-    def __check(self):
+    def __check_cooldown(self):
         """
-        Determine if the number of triggers is below the max_triggers.
+        Check if cooldown is needed.
 
         This method intended to be called by trigger() method.
 
-        :returns: True when max has not been reached.
+        :returns: True when the counter exceeds the max_triggers attribute.
 
         :rtype: bool
         """
 
-        self.__logger.debug("check()")
+        self.__logger.debug("__check_cooldown()")
 
-        return self.max_triggers > len(self.__counter)
+        return self.max_triggers <= len(self.__counter)
 
-    def __wait(self):
+    def __cooldown(self):
         """
         Calculates and then sleeps the necassary amount of time for oldest
         trigger to expire.
@@ -87,7 +93,7 @@ class RateLimit:
         :rtype: None
         """
 
-        self.__logger.debug("wait()")
+        self.__logger.debug("__cooldown()")
 
         wait_time = (min(self.__counter) + self.max_period) - time.time()
 
@@ -102,7 +108,7 @@ class RateLimit:
 
         return None
 
-    def __remove(self):
+    def __remove_expired_triggers(self):
         """
         Remove all expired triggers from the counter.
 
@@ -111,7 +117,7 @@ class RateLimit:
         :rtype: None
         """
 
-        self.__logger.debug("remove()")
+        self.__logger.debug("__remove_expired_triggers()")
 
         expire_ts = time.time() - self.max_period
 
@@ -119,7 +125,7 @@ class RateLimit:
 
         return None
 
-    def __add(self):
+    def __add_trigger(self):
         """
         Records the current timestamp and adds it to the list of triggers.
 
@@ -128,7 +134,7 @@ class RateLimit:
         :rtype: None
         """
 
-        self.__logger.debug("add()")
+        self.__logger.debug("__add_trigger()")
 
         self.__counter.append(time.time())
 
