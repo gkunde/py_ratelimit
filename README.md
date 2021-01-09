@@ -12,6 +12,7 @@ Ideally used for rate limiting Client API requests.
 import ratelimit
 
 simulated_results = []
+# create limiter to allow 20 triggers within 2 minutes
 ratelimiter = ratelimit.RateLimit(20, 120)
 
 for idx in range(40):
