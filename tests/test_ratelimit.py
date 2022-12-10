@@ -1,3 +1,14 @@
+"""
+MIT License
+
+Copyright (c) 2022 Garrett Kunde
+
+This source code is licensed under the MIT License found in the
+LICENSE file in the root directory of this source tree.
+
+If LICENSE file is not included, please visit :
+    https://github.com/gkunde/py_ratelimit
+"""
 import time
 import unittest
 
@@ -6,57 +17,28 @@ import ratelimit
 
 class Test_RateLimit(unittest.TestCase):
 
-    def test_adding_triggers(self):
-        """
-        Verify that all trggers are added. Long period to ensure nothing is
-        expired before the last trigger is added.
-        """
+    MAX_REQUESTS = 4
+    PERIOD = 5
 
-        num_request = 5
+    def test_init(self):
 
-        obj = ratelimit.RateLimit(10, 300)
+        obj = ratelimit.RateLimit(self.MAX_REQUESTS, self.PERIOD)
 
-        for _ in range(num_request):
-            obj.trigger()
+        self.assertEqual(obj.max_count, self.MAX_REQUESTS)
+        self.assertEqual(obj.period, self.PERIOD)
+    
+    def test_check(self):
 
-        self.assertEqual(num_request, len(obj))
+        obj = ratelimit.RateLimit(self.MAX_REQUESTS, self.PERIOD)
 
-    def test_expiring_triggers(self):
-        """
-        Verify that old triggers are expired if the time between triggers
-        exceeds the max_period value.
-        """
+        start = time.time()
+        for _ in range(self.MAX_REQUESTS + 1):
 
-        num_request = 2
-
-        obj = ratelimit.RateLimit(10, 2)
-
-        for _ in range(num_request):
-            obj.trigger()
-            time.sleep(3)
-
-        self.assertEqual(num_request - 1, len(obj))
-
-    def test_wait_to_expire(self):
-        """
-        Verify that two many triggers will cause a wait and then removal of
-        expired triggers.
-        """
-
-        num_request = 2
-
-        obj = ratelimit.RateLimit(1, 2)
-
-        start_time = time.time()
-
-        for _ in range(num_request):
-            obj.trigger()
-
-        elapsed_time = time.time() - start_time
-
-        self.assertEqual(num_request - 1, len(obj))
-        self.assertLessEqual(2, elapsed_time)
-
+            obj.check()
+        
+        total_time = time.time() - start
+        
+        self.assertGreaterEqual(total_time, self.PERIOD)
 
 if __name__ == '__main__':
     unittest.main()

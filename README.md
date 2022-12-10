@@ -16,7 +16,7 @@ simulated_results = []
 ratelimiter = ratelimit.RateLimit(20, 120)
 
 for idx in range(40):
-    ratelimiter.trigger()
+    ratelimiter.check()
     simulated_results.append("%4d - %s" % (idx, time.time(),))
 
 ```
@@ -32,7 +32,7 @@ class ApiClient:
 		self.__http_client = requests.Session()
 	
 	def get(self, endpoint):
-		self.__ratelimit.trigger()
+		self.__ratelimit.check()
 		self.__http_client.get(endpoint)
 ```
 ## To Do
