@@ -22,7 +22,6 @@ class RateLimit:
     :param period: The maximum number of seconds for a period.
     """
 
-    DEFAULT_KEY = "__ALL__"
     SLEEP_PERIOD = 1
 
     def __init__(self, max_count: int, period: int):
